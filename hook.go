@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,8 +17,9 @@ import (
 )
 
 const (
-	url = "https://github.com/libreim/apuntesDGIIM"
-	dir = "./apuntesDGIIM"
+	repoUrl = "https://github.com/libreim/apuntesDGIIM"
+	repoDir = "./apuntesDGIIM"
+	logPath = "/home/jmml/log/"
 )
 
 func moveFile(source string, dest string) {
@@ -40,42 +44,57 @@ func pullRepo() {
 
 func compileAll() {
 
+	s := spinner.New(spinner.CharSets[26], 800*time.Millisecond)
+	s.Prefix = "Compilando"
+
 	cmdName := "rake"
 	cmdArgs := []string{"-B"}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
+	log.Println(cmd.Args)
 
-	//fmt.Println(cmd.Args)
-
-	if _, err := cmd.Output(); err != nil {
-		fmt.Fprintln(os.Stderr, "Hubo un error de compilación", err)
-		//fmt.Printf("Salida: %s\n", out)
-
+	// Creamos el archivo del log
+	outfile, err := os.Create(logpath, "hook-"+time.Now().Format("02012006-150405")+".log")
+	if err != nil {
+		fmt.Println("ERROR:", err)
+		os.Exit(-1)
 	}
+	defer outfile.Close()
+
+	s.Start()
+
+	out, err := cmd.Output()
+
+	s.Stop()
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Hubo un error de compilación", err)
+	}
+
+	writer := bufio.NewWriter(outfile)
+	reader := bytes.NewReader(out)
+
+	io.Copy(writer, reader)
+
 }
 
 func handlePush() {
 
 	log.Println("Hook push recibido")
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	if _, err := os.Stat(repoDir); os.IsNotExist(err) {
 		log.Println("El directorio no existe, clonando el repositorio...")
 		cloneRepo()
 	}
 
-	os.Chdir(dir)
+	os.Chdir(repoDir)
 
 	log.Println("Actualizando el repositorio...")
 	pullRepo()
 
 	log.Println("Ejecutando Rake...")
 
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	s.Prefix = "Compilando "
-
-	s.Start()
 	compileAll()
-	s.Stop()
 
 	log.Println("¡Archivos compilados!")
 
@@ -84,7 +103,7 @@ func handlePush() {
 func cloneRepo() {
 
 	cmdName := "git"
-	cmdArgs := []string{"clone", url}
+	cmdArgs := []string{"clone", repoUrl}
 
 	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
