@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/go-github/github"
-	//"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	//"strings"
+	"time"
+
+	"github.com/briandowns/spinner"
+	"github.com/google/go-github/github"
+)
+
+const (
+	url = "https://github.com/libreim/apuntesDGIIM"
+	dir = "./apuntesDGIIM"
 )
 
 func moveFile(source string, dest string) {
@@ -39,39 +45,46 @@ func compileAll() {
 
 	cmd := exec.Command(cmdName, cmdArgs...)
 
-	fmt.Println(cmd.Args)
+	//fmt.Println(cmd.Args)
 
 	if _, err := cmd.Output(); err != nil {
 		fmt.Fprintln(os.Stderr, "Hubo un error de compilación", err)
 		//fmt.Printf("Salida: %s\n", out)
 
 	}
-
-	log.Println("¡Archivos compilados!")
 }
 
 func handlePush() {
 
 	log.Println("Hook push recibido")
 
-	if _, err := os.Stat("./apuntesDGIIM"); os.IsNotExist(err) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		log.Println("El directorio no existe, clonando el repositorio...")
 		cloneRepo()
 	}
 
-	os.Chdir("./apuntesDGIIM")
+	os.Chdir(dir)
 
 	log.Println("Actualizando el repositorio...")
 	pullRepo()
 
-	log.Println("Ejecutando Rake")
+	log.Println("Ejecutando Rake...")
+
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	s.Prefix = "Compilando "
+
+	s.Start()
 	compileAll()
+	s.Stop()
+
+	log.Println("¡Archivos compilados!")
 
 }
 
 func cloneRepo() {
+
 	cmdName := "git"
-	cmdArgs := []string{"clone", "https://github.com/libreim/apuntesDGIIM"}
+	cmdArgs := []string{"clone", url}
 
 	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
