@@ -9,8 +9,17 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
+	//"strings"
 )
+
+func moveFile(source string, dest string) {
+	err := os.Rename(source, dest)
+
+	if err != nil {
+		log.Println("ERROR: no se ha podido mover los archivos al directorio correspondiente")
+		return
+	}
+}
 
 func pullRepo() {
 	cmdName := "git"
@@ -45,8 +54,12 @@ func handlePush() {
 
 	log.Println("Hook push recibido")
 
+	if _, err := os.Stat("./apuntesDGIIM"); os.IsNotExist(err) {
+		log.Println("El directorio no existe, clonando el repositorio...")
+		cloneRepo()
+	}
+
 	os.Chdir("./apuntesDGIIM")
-	//cloneRepo()
 
 	log.Println("Actualizando el repositorio...")
 	pullRepo()
@@ -82,27 +95,17 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch e := event.(type) {
+	switch event.(type) {
 	case *github.PushEvent:
 		handlePush()
-	case *github.PullRequestEvent:
-		// this is a pull request, do something with it
-	case *github.WatchEvent:
-		// https://developer.github.com/v3/activity/events/types/#watchevent
-		// someone starred our repository
-		if e.Action != nil && *e.Action == "starred" {
-			fmt.Printf("%s starred repository %s\n",
-				*e.Sender.Login, *e.Repo.FullName)
-		}
 	default:
-		log.Printf("unknown event type %s\n", github.WebHookType(r))
-		return
+		log.Printf("AVISO: tipo de webhook desconocido - %s\n", github.WebHookType(r))
 	}
 
 }
 
 func main() {
-	log.Println("server started")
+	log.Println("Servidor iniciado")
 	http.HandleFunc("/webhook", handleWebhook)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
