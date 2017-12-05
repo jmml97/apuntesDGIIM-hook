@@ -9,10 +9,50 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 )
 
+func pullRepo() {
+	cmdName := "git"
+	cmdArgs := []string{"pull"}
+
+	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, "There was an error running pull: ", err)
+		os.Exit(1)
+	}
+
+}
+
+func compileAll() {
+
+	cmdName := "rake"
+	cmdArgs := []string{"-B"}
+
+	cmd := exec.Command(cmdName, cmdArgs...)
+
+	fmt.Println(cmd.Args)
+
+	if _, err := cmd.Output(); err != nil {
+		fmt.Fprintln(os.Stderr, "Hubo un error de compilación", err)
+		//fmt.Printf("Salida: %s\n", out)
+
+	}
+
+	log.Println("¡Archivos compilados!")
+}
+
 func handlePush() {
-	cloneRepo()
+
+	log.Println("Hook push recibido")
+
+	os.Chdir("./apuntesDGIIM")
+	//cloneRepo()
+
+	log.Println("Actualizando el repositorio...")
+	pullRepo()
+
+	log.Println("Ejecutando Rake")
+	compileAll()
 
 }
 
