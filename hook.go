@@ -18,7 +18,7 @@ import (
 
 const (
 	repoUrl = "https://github.com/libreim/apuntesDGIIM"
-	repoDir = "./apuntesDGIIM"
+	repoDir = "/home/jmml/apuntesDGIIM"
 	logPath = "/home/jmml/log/"
 )
 
