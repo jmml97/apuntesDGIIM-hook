@@ -54,7 +54,7 @@ func compileAll() {
 	log.Println(cmd.Args)
 
 	// Creamos el archivo del log
-	outfile, err := os.Create(logpath, "hook-"+time.Now().Format("02012006-150405")+".log")
+	outfile, err := os.Create(logPath + "hook-" + time.Now().Format("02012006-150405") + ".log")
 	if err != nil {
 		fmt.Println("ERROR:", err)
 		os.Exit(-1)
