@@ -136,8 +136,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func handleTest(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+}
+
 func main() {
 	log.Println("Servidor iniciado")
-	http.HandleFunc("/", handleWebhook)
+	http.HandleFunc("/", handleTest)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
