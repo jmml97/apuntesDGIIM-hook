@@ -138,6 +138,6 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.Println("Servidor iniciado")
-	http.HandleFunc("/webhook", handleWebhook)
+	http.HandleFunc("/", handleWebhook)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
