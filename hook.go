@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	repoUrl = "https://github.com/libreim/apuntesDGIIM"
+	repoUrl = "https://github.com/libreim/apuntesDGIIM.git"
 	repoDir = "/home/jmml/apuntesDGIIM"
 	logPath = "/home/jmml/log/"
 )
@@ -105,8 +105,9 @@ func cloneRepo() {
 	cmdName := "git"
 	cmdArgs := []string{"clone", repoUrl}
 
-	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+	if out, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
+		fmt.Fprintln(os.Stderr, "output: ", out)
 		os.Exit(1)
 	}
 
@@ -136,12 +137,8 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func handleTest(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there!")
-}
-
 func main() {
 	log.Println("Servidor iniciado")
-	http.HandleFunc("/", handleTest)
+	http.HandleFunc("/", handleWebhook)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
