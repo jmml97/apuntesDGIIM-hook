@@ -18,25 +18,29 @@ import (
 
 const (
 	repoUrl = "https://github.com/libreim/apuntesDGIIM.git"
-	repoDir = "/home/jmml/apuntesDGIIM"
-	logPath = "/home/jmml/log/"
+	repoDir = "/home/apuntes/apuntesDGIIM"
+	logPath = "/home/apuntes/log/"
 )
 
-func moveFile(source string, dest string) {
-	err := os.Rename(source, dest)
+func cloneRepo() {
 
-	if err != nil {
-		log.Println("ERROR: no se ha podido mover los archivos al directorio correspondiente")
-		return
+	cmdName := "git"
+	cmdArgs := []string{"clone", repoUrl}
+
+	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
+		log.Println("ERROR: no se ha podido clonar el repositorio:", err)
+		os.Exit(1)
 	}
+
 }
 
 func pullRepo() {
+
 	cmdName := "git"
 	cmdArgs := []string{"pull"}
 
 	if _, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, "There was an error running pull: ", err)
+		log.Println("ERROR: no se ha podido ejecutar pull:", err)
 		os.Exit(1)
 	}
 
@@ -53,10 +57,10 @@ func compileAll() {
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Println(cmd.Args)
 
-	// Creamos el archivo del log
-	outfile, err := os.Create(logPath + "hook-" + time.Now().Format("02012006-150405") + ".log")
+	// Creamos el archivo del log de compilación
+	outfile, err := os.Create(logPath + "compile-" + time.Now().Format("02012006-150405") + ".log")
 	if err != nil {
-		fmt.Println("ERROR:", err)
+		log.Println("ERROR:", err)
 		os.Exit(-1)
 	}
 	defer outfile.Close()
@@ -83,7 +87,7 @@ func handlePush() {
 	log.Println("Hook push recibido")
 
 	if _, err := os.Stat(repoDir); os.IsNotExist(err) {
-		log.Println("El directorio no existe, clonando el repositorio...")
+		log.Println("El directorio no existe, clonando el repositorio..")
 		cloneRepo()
 	}
 
@@ -100,31 +104,20 @@ func handlePush() {
 
 }
 
-func cloneRepo() {
-
-	cmdName := "git"
-	cmdArgs := []string{"clone", repoUrl}
-
-	if out, err := exec.Command(cmdName, cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, "There was an error running git rev-parse command: ", err)
-		fmt.Fprintln(os.Stderr, "output: ", out)
-		os.Exit(1)
-	}
-
-}
-
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("error reading request body: err=%s\n", err)
+		log.Println("ERROR: no se ha podido leer el cuerpo de la petición")
+		log.Println(err)
 		return
 	}
 	defer r.Body.Close()
 
 	event, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
-		log.Printf("could not parse webhook: err=%s\n", err)
+		log.Println("ERROR: no se ha podido analizar el webhook")
+		log.Println(err)
 		return
 	}
 
@@ -138,6 +131,20 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	// Creamos el archivo del log del programa
+	logFile, err := os.Create(logPath + "hook-" + time.Now().Format("02012006-150405") + ".log")
+	if err != nil {
+		log.Println("ERROR:", err)
+		os.Exit(-1)
+	}
+	defer logFile.Close()
+
+	// Utilizamos un MultiWriter para imprimir el log a un archivo y por
+	// pantalla
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+
 	log.Println("Servidor iniciado")
 	http.HandleFunc("/", handleWebhook)
 	log.Fatal(http.ListenAndServe(":8080", nil))
