@@ -51,8 +51,8 @@ func compileAll() {
 	s := spinner.New(spinner.CharSets[26], 800*time.Millisecond)
 	s.Prefix = "Compilando"
 
-	cmdName := "rake"
-	cmdArgs := []string{"-B"}
+	cmdName := "make"
+	cmdArgs := []string{"-k"}
 
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Println(cmd.Args)
